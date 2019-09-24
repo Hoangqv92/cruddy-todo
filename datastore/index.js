@@ -2,14 +2,13 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
+const Promise = require('bluebird');
 
 var items = {};
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
 exports.create = (text, callback) => {
-
-  // var id =
   counter.getNextUniqueId((err, id)=>{
     // items[cs] = text;
     if (err) {
@@ -36,11 +35,11 @@ exports.readAll = (callback) => {
       //iterate thorugh each file in files
       //split the file into an id string and txt string
       // set the id string to id
-      var fileIds = files.map((file) => {
+      var promises = files.map((file) => {
         var id = file.split('.')[0];
-        return {id, text: id};
+        return exports.readOneAsync(id);
       });
-      callback(err, fileIds);
+      Promise.all(promises).then((values)=> { callback(err, values); } ).catch((err)=>callback(err));
     }
   });
 };
@@ -81,6 +80,8 @@ exports.readOne = (id, callback) => {
   //   callback(null, { id, text});
   // }
 };
+
+exports.readOneAsync = Promise.promisify(exports.readOne);
 
 exports.update = (id, text, callback) => {
   fs.readdir(exports.dataDir, (err, files) => {
